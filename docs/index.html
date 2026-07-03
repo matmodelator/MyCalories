@@ -25,32 +25,16 @@ body {
 input, button {
   padding: 10px;
   font-size: 16px;
-  margin: 4px 0;
 }
 
 input {
   width: 100%;
   box-sizing: border-box;
+  margin-bottom: 8px;
 }
 
 button {
   cursor: pointer;
-}
-
-.card {
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 12px;
-  margin-top: 12px;
-  background: #fafafa;
-}
-
-.card img {
-  max-width: 80px;
-  max-height: 80px;
-  object-fit: contain;
-  float: right;
-  margin-left: 12px;
 }
 
 .total {
@@ -61,8 +45,101 @@ button {
   font-weight: bold;
 }
 
-.small {
+.card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 12px;
+  background: #fafafa;
+}
+
+/* затемнение */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 10;
+}
+
+/* боковая панель */
+.results-panel {
+  position: fixed;
+  top: 0;
+  right: -360px;
+  width: 340px;
+  max-width: 90vw;
+  height: 100vh;
+  background: white;
+  z-index: 20;
+  box-shadow: -4px 0 18px rgba(0,0,0,0.25);
+  transition: right 0.25s ease;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.results-panel.open {
+  right: 0;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.result-item {
+  border-bottom: 1px solid #eee;
+  padding: 10px 0;
+}
+
+.result-main {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.result-main img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  background: #f3f3f3;
+  border-radius: 8px;
+}
+
+.result-title {
+  font-weight: bold;
+}
+
+.result-brand {
+  font-size: 13px;
   color: #666;
+}
+
+.details {
+  display: none;
+  margin-top: 10px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.details.open {
+  display: block;
+}
+
+.details input {
+  margin-top: 8px;
+}
+
+.small-btn {
+  margin-top: 8px;
+  padding: 7px 10px;
   font-size: 14px;
 }
 </style>
@@ -76,9 +153,6 @@ button {
   <input id="searchInput" placeholder="Например: hummus, banana, cottage">
   <button onclick="searchProducts()">Найти</button>
 
-  <h2>Результаты поиска</h2>
-  <div id="results"></div>
-
   <h2>Сегодня съедено</h2>
   <div id="log"></div>
 
@@ -88,6 +162,17 @@ button {
     Жиры: 0 г<br>
     Углеводы: 0 г
   </div>
+</div>
+
+<div id="overlay" class="overlay" onclick="closePanel()"></div>
+
+<div id="resultsPanel" class="results-panel">
+  <div class="panel-header">
+    <b>Результаты поиска</b>
+    <button onclick="closePanel()">×</button>
+  </div>
+
+  <div id="results"></div>
 </div>
 
 <script>
@@ -108,6 +193,7 @@ async function searchProducts() {
     return;
   }
 
+  openPanel();
   document.getElementById("results").innerHTML = "Загрузка...";
 
   const url =
@@ -148,34 +234,47 @@ function renderResults() {
     const carbs = Number(n["carbohydrates_100g"] || 0);
 
     html += `
-      <div class="card">
-        ${image ? `<img src="${image}">` : ""}
+      <div class="result-item">
 
-        <h3>${name}</h3>
+        <div class="result-main">
+          ${image ? `<img src="${image}">` : `<img alt="">`}
 
-        <div class="small">
-          Бренд: ${brand || "-"}<br>
-          Штрихкод: ${barcode || "-"}
+          <div>
+            <div class="result-title">${name}</div>
+            <div class="result-brand">${brand || "-"}</div>
+
+            <button class="small-btn" onclick="toggleDetails(${index})">
+              Подробнее
+            </button>
+          </div>
         </div>
 
-        <p>
+        <div id="details_${index}" class="details">
+          Штрихкод: ${barcode || "-"}<br><br>
+
           На 100 г:<br>
           Калории: ${calories}<br>
           Белки: ${protein} г<br>
           Жиры: ${fat} г<br>
-          Углеводы: ${carbs} г
-        </p>
+          Углеводы: ${carbs} г<br>
 
-        <input id="grams_${index}" type="number" value="100" min="1">
+          <input id="grams_${index}" type="number" value="100" min="1">
 
-        <button onclick="addFood(${index})">
-          Добавить
-        </button>
+          <button onclick="addFood(${index})">
+            Добавить
+          </button>
+        </div>
+
       </div>
     `;
   });
 
   document.getElementById("results").innerHTML = html;
+}
+
+function toggleDetails(index) {
+  const box = document.getElementById("details_" + index);
+  box.classList.toggle("open");
 }
 
 function addFood(index) {
@@ -216,6 +315,7 @@ function addFood(index) {
   `;
 
   updateTotals();
+  closePanel();
 }
 
 function updateTotals() {
@@ -227,11 +327,20 @@ function updateTotals() {
   `;
 }
 
+function openPanel() {
+  document.getElementById("overlay").style.display = "block";
+  document.getElementById("resultsPanel").classList.add("open");
+}
+
+function closePanel() {
+  document.getElementById("overlay").style.display = "none";
+  document.getElementById("resultsPanel").classList.remove("open");
+}
+
 function round(n) {
   return Math.round(n * 10) / 10;
 }
 </script>
-
 
 
 
@@ -248,8 +357,7 @@ function round(n) {
 
 <div id="service-console">
 
-  <div class="row" id="build-top">
-мультипоиск | v1.1.0
+выпадающие окна | v1.2.0
   </div>
 
   <div class="row" id="build-down">
