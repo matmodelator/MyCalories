@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>MyCalories</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 20px;
+}
+
+.app {
+  max-width: 700px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+input, button {
+  padding: 10px;
+  font-size: 16px;
+  margin: 4px 0;
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+}
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 12px;
+  background: #fafafa;
+}
+
+.total {
+  background: #e8f2ff;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 16px;
+  font-weight: bold;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row input {
+  flex: 1;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <h1>Mini Calories</h1>
+
+  <input id="searchInput" placeholder="Например: hummus, banana, coca cola">
+  <button onclick="searchProduct()">Найти продукт</button>
+
+  <div id="result"></div>
+
+  <h2>Сегодня съедено</h2>
+  <div id="log"></div>
+
+  <div class="total" id="totalBox">
+    Калории: 0<br>
+    Белки: 0 г<br>
+    Жиры: 0 г<br>
+    Углеводы: 0 г
+  </div>
+</div>
+
+<script>
+let selectedProduct = null;
+
+let totals = {
+  calories: 0,
+  protein: 0,
+  fat: 0,
+  carbs: 0
+};
+
+async function searchProduct() {
+  const query = document.getElementById("searchInput").value.trim();
+
+  if (!query) {
+    alert("Введите название продукта");
+    return;
+  }
+
+  const url =
+    "https://world.openfoodfacts.org/cgi/search.pl" +
+    "?search_terms=" + encodeURIComponent(query) +
+    "&search_simple=1" +
+    "&action=process" +
+    "&json=1" +
+    "&page_size=1";
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (!data.products || data.products.length === 0) {
+    document.getElementById("result").innerHTML = "Ничего не найдено";
+    return;
+  }
+
+  const p = data.products[0];
+  const n = p.nutriments || {};
+
+  selectedProduct = {
+    name: p.product_name || query,
+    brand: p.brands || "",
+    calories100: Number(n["energy-kcal_100g"] || 0),
+    protein100: Number(n["proteins_100g"] || 0),
+    fat100: Number(n["fat_100g"] || 0),
+    carbs100: Number(n["carbohydrates_100g"] || 0)
+  };
+
+  document.getElementById("result").innerHTML = `
+    <div class="card">
+      <h3>${selectedProduct.name}</h3>
+      <p>${selectedProduct.brand}</p>
+
+      <p>
+        На 100 г:<br>
+        Калории: ${selectedProduct.calories100}<br>
+        Белки: ${selectedProduct.protein100} г<br>
+        Жиры: ${selectedProduct.fat100} г<br>
+        Углеводы: ${selectedProduct.carbs100} г
+      </p>
+
+      <div class="row">
+        <input id="gramsInput" type="number" value="100" min="1">
+        <button onclick="addFood()">Добавить</button>
+      </div>
+    </div>
+  `;
+}
+
+function addFood() {
+  if (!selectedProduct) return;
+
+  const grams = Number(document.getElementById("gramsInput").value);
+
+  if (!grams || grams <= 0) {
+    alert("Введите граммы");
+    return;
+  }
+
+  const k = grams / 100;
+
+  const item = {
+    name: selectedProduct.name,
+    grams: grams,
+    calories: selectedProduct.calories100 * k,
+    protein: selectedProduct.protein100 * k,
+    fat: selectedProduct.fat100 * k,
+    carbs: selectedProduct.carbs100 * k
+  };
+
+  totals.calories += item.calories;
+  totals.protein += item.protein;
+  totals.fat += item.fat;
+  totals.carbs += item.carbs;
+
+  document.getElementById("log").innerHTML += `
+    <div class="card">
+      ${item.name} — ${item.grams} г<br>
+      ${round(item.calories)} ккал,
+      Б: ${round(item.protein)} г,
+      Ж: ${round(item.fat)} г,
+      У: ${round(item.carbs)} г
+    </div>
+  `;
+
+  updateTotals();
+}
+
+function updateTotals() {
+  document.getElementById("totalBox").innerHTML = `
+    Калории: ${round(totals.calories)}<br>
+    Белки: ${round(totals.protein)} г<br>
+    Жиры: ${round(totals.fat)} г<br>
+    Углеводы: ${round(totals.carbs)} г
+  `;
+}
+
+function round(n) {
+  return Math.round(n * 10) / 10;
+}
+</script>
+
+
+
+
+
+
+<!-- ========================================
+     SERVICE CONSOLE
+     Верхняя строка редактируется вручную
+     Здесь задается:
+     - название страницы
+     - номер версии
+======================================== -->
+
+<div id="service-console">
+
+  <div class="row" id="build-top">
+gpt | v1.0.0
+  </div>
+
+  <div class="row" id="build-down">
+    deploy: --
+  </div>
+
+</div>
+
+<!-- ========================================
+     SCRIPT
+     Автоматически выводит:
+     - дату
+     - время
+     Момент загрузки страницы
+======================================== -->
+
+<script>
+(function () {
+  const now = new Date();
+
+  const pad = n =>
+    String(n).padStart(2, "0");
+
+  const date =
+      pad(now.getDate())
+    + "."
+    + pad(now.getMonth() + 1)
+    + "."
+    + now.getFullYear();
+
+  const time =
+      pad(now.getHours())
+    + ":"
+    + pad(now.getMinutes());
+
+  document
+    .getElementById("build-down")
+    .textContent =
+      "deploy: "
+      + date
+      + " "
+      + time;
+})();
+</script>
+
+
+</body>
+</html>
