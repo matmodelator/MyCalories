@@ -53,7 +53,6 @@ button {
   background: #fafafa;
 }
 
-/* затемнение */
 .overlay {
   display: none;
   position: fixed;
@@ -62,7 +61,6 @@ button {
   z-index: 10;
 }
 
-/* боковая панель */
 .results-panel {
   position: fixed;
   top: 0;
@@ -120,6 +118,12 @@ button {
   color: #666;
 }
 
+.result-meta {
+  font-size: 12px;
+  color: #555;
+  margin-top: 3px;
+}
+
 .details {
   display: none;
   margin-top: 10px;
@@ -150,10 +154,13 @@ button {
 <div class="app">
   <h1>Mini Calories</h1>
 
+  <label>Дата</label>
+  <input id="dateInput" type="date" onchange="changeDate()">
+
   <input id="searchInput" placeholder="Например: hummus, banana, cottage">
   <button onclick="searchProducts()">Найти</button>
 
-  <h2>Сегодня съедено</h2>
+  <h2 id="dayTitle">Дневник</h2>
   <div id="log"></div>
 
   <div class="total" id="totalBox">
@@ -178,12 +185,47 @@ button {
 <script>
 let products = [];
 
-let totals = {
-  calories: 0,
-  protein: 0,
-  fat: 0,
-  carbs: 0
-};
+let diary = {};
+
+let currentDate = "";
+
+function initDate() {
+  const today = new Date().toISOString().slice(0, 10);
+  currentDate = today;
+  document.getElementById("dateInput").value = today;
+
+  if (!diary[currentDate]) {
+    diary[currentDate] = {
+      items: [],
+      totals: {
+        calories: 0,
+        protein: 0,
+        fat: 0,
+        carbs: 0
+      }
+    };
+  }
+
+  renderDay();
+}
+
+function changeDate() {
+  currentDate = document.getElementById("dateInput").value;
+
+  if (!diary[currentDate]) {
+    diary[currentDate] = {
+      items: [],
+      totals: {
+        calories: 0,
+        protein: 0,
+        fat: 0,
+        carbs: 0
+      }
+    };
+  }
+
+  renderDay();
+}
 
 async function searchProducts() {
   const query = document.getElementById("searchInput").value.trim();
@@ -228,6 +270,9 @@ function renderResults() {
     const image = p.image_front_small_url || "";
     const barcode = p.code || "";
 
+    const countries = p.countries || "";
+    const origins = p.origins || "";
+
     const calories = Number(n["energy-kcal_100g"] || 0);
     const protein = Number(n["proteins_100g"] || 0);
     const fat = Number(n["fat_100g"] || 0);
@@ -243,6 +288,11 @@ function renderResults() {
             <div class="result-title">${name}</div>
             <div class="result-brand">${brand || "-"}</div>
 
+            <div class="result-meta">
+              Countries: ${countries || "-"}<br>
+              Origins: ${origins || "-"}
+            </div>
+
             <button class="small-btn" onclick="toggleDetails(${index})">
               Подробнее
             </button>
@@ -250,7 +300,9 @@ function renderResults() {
         </div>
 
         <div id="details_${index}" class="details">
-          Штрихкод: ${barcode || "-"}<br><br>
+          Штрихкод: ${barcode || "-"}<br>
+          Countries: ${countries || "-"}<br>
+          Origins: ${origins || "-"}<br><br>
 
           На 100 г:<br>
           Калории: ${calories}<br>
@@ -292,6 +344,9 @@ function addFood(index) {
 
   const item = {
     name: p.product_name || "Без названия",
+    brand: p.brands || "",
+    countries: p.countries || "",
+    origins: p.origins || "",
     grams: grams,
     calories: Number(n["energy-kcal_100g"] || 0) * k,
     protein: Number(n["proteins_100g"] || 0) * k,
@@ -299,26 +354,44 @@ function addFood(index) {
     carbs: Number(n["carbohydrates_100g"] || 0) * k
   };
 
-  totals.calories += item.calories;
-  totals.protein += item.protein;
-  totals.fat += item.fat;
-  totals.carbs += item.carbs;
+  diary[currentDate].items.push(item);
 
-  document.getElementById("log").innerHTML += `
-    <div class="card">
-      <b>${item.name}</b> — ${item.grams} г<br>
-      ${round(item.calories)} ккал,
-      Б: ${round(item.protein)} г,
-      Ж: ${round(item.fat)} г,
-      У: ${round(item.carbs)} г
-    </div>
-  `;
+  diary[currentDate].totals.calories += item.calories;
+  diary[currentDate].totals.protein += item.protein;
+  diary[currentDate].totals.fat += item.fat;
+  diary[currentDate].totals.carbs += item.carbs;
 
-  updateTotals();
+  renderDay();
   closePanel();
 }
 
+function renderDay() {
+  document.getElementById("dayTitle").innerText = "Дневник: " + currentDate;
+
+  let html = "";
+
+  diary[currentDate].items.forEach(item => {
+    html += `
+      <div class="card">
+        <b>${item.name}</b> — ${item.grams} г<br>
+        ${item.brand ? item.brand + "<br>" : ""}
+        ${item.countries ? "Countries: " + item.countries + "<br>" : ""}
+        ${item.origins ? "Origins: " + item.origins + "<br>" : ""}
+        ${round(item.calories)} ккал,
+        Б: ${round(item.protein)} г,
+        Ж: ${round(item.fat)} г,
+        У: ${round(item.carbs)} г
+      </div>
+    `;
+  });
+
+  document.getElementById("log").innerHTML = html;
+  updateTotals();
+}
+
 function updateTotals() {
+  const totals = diary[currentDate].totals;
+
   document.getElementById("totalBox").innerHTML = `
     Калории: ${round(totals.calories)}<br>
     Белки: ${round(totals.protein)} г<br>
@@ -340,8 +413,9 @@ function closePanel() {
 function round(n) {
   return Math.round(n * 10) / 10;
 }
-</script>
 
+initDate();
+</script>
 
 
 
@@ -357,7 +431,7 @@ function round(n) {
 
 <div id="service-console">
 
-выпадающие окна | v1.2.0
+страны и даты | v2.0.0
   </div>
 
   <div class="row" id="build-down">
