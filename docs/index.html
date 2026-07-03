@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>MyCalories</title>
+<title>Mini Calories</title>
 
 <style>
 body {
@@ -15,7 +15,7 @@ body {
 }
 
 .app {
-  max-width: 700px;
+  max-width: 800px;
   margin: auto;
   background: white;
   padding: 20px;
@@ -45,6 +45,14 @@ button {
   background: #fafafa;
 }
 
+.card img {
+  max-width: 80px;
+  max-height: 80px;
+  object-fit: contain;
+  float: right;
+  margin-left: 12px;
+}
+
 .total {
   background: #e8f2ff;
   padding: 12px;
@@ -53,13 +61,9 @@ button {
   font-weight: bold;
 }
 
-.row {
-  display: flex;
-  gap: 8px;
-}
-
-.row input {
-  flex: 1;
+.small {
+  color: #666;
+  font-size: 14px;
 }
 </style>
 </head>
@@ -69,10 +73,11 @@ button {
 <div class="app">
   <h1>Mini Calories</h1>
 
-  <input id="searchInput" placeholder="Например: hummus, banana, coca cola">
-  <button onclick="searchProduct()">Найти продукт</button>
+  <input id="searchInput" placeholder="Например: hummus, banana, cottage">
+  <button onclick="searchProducts()">Найти</button>
 
-  <div id="result"></div>
+  <h2>Результаты поиска</h2>
+  <div id="results"></div>
 
   <h2>Сегодня съедено</h2>
   <div id="log"></div>
@@ -86,7 +91,7 @@ button {
 </div>
 
 <script>
-let selectedProduct = null;
+let products = [];
 
 let totals = {
   calories: 0,
@@ -95,7 +100,7 @@ let totals = {
   carbs: 0
 };
 
-async function searchProduct() {
+async function searchProducts() {
   const query = document.getElementById("searchInput").value.trim();
 
   if (!query) {
@@ -103,59 +108,81 @@ async function searchProduct() {
     return;
   }
 
+  document.getElementById("results").innerHTML = "Загрузка...";
+
   const url =
     "https://world.openfoodfacts.org/cgi/search.pl" +
     "?search_terms=" + encodeURIComponent(query) +
     "&search_simple=1" +
     "&action=process" +
     "&json=1" +
-    "&page_size=1";
+    "&page_size=20";
 
   const response = await fetch(url);
   const data = await response.json();
 
-  if (!data.products || data.products.length === 0) {
-    document.getElementById("result").innerHTML = "Ничего не найдено";
+  products = data.products || [];
+
+  if (products.length === 0) {
+    document.getElementById("results").innerHTML = "Ничего не найдено";
     return;
   }
 
-  const p = data.products[0];
-  const n = p.nutriments || {};
-
-  selectedProduct = {
-    name: p.product_name || query,
-    brand: p.brands || "",
-    calories100: Number(n["energy-kcal_100g"] || 0),
-    protein100: Number(n["proteins_100g"] || 0),
-    fat100: Number(n["fat_100g"] || 0),
-    carbs100: Number(n["carbohydrates_100g"] || 0)
-  };
-
-  document.getElementById("result").innerHTML = `
-    <div class="card">
-      <h3>${selectedProduct.name}</h3>
-      <p>${selectedProduct.brand}</p>
-
-      <p>
-        На 100 г:<br>
-        Калории: ${selectedProduct.calories100}<br>
-        Белки: ${selectedProduct.protein100} г<br>
-        Жиры: ${selectedProduct.fat100} г<br>
-        Углеводы: ${selectedProduct.carbs100} г
-      </p>
-
-      <div class="row">
-        <input id="gramsInput" type="number" value="100" min="1">
-        <button onclick="addFood()">Добавить</button>
-      </div>
-    </div>
-  `;
+  renderResults();
 }
 
-function addFood() {
-  if (!selectedProduct) return;
+function renderResults() {
+  let html = "";
 
-  const grams = Number(document.getElementById("gramsInput").value);
+  products.forEach((p, index) => {
+    const n = p.nutriments || {};
+
+    const name = p.product_name || "Без названия";
+    const brand = p.brands || "";
+    const image = p.image_front_small_url || "";
+    const barcode = p.code || "";
+
+    const calories = Number(n["energy-kcal_100g"] || 0);
+    const protein = Number(n["proteins_100g"] || 0);
+    const fat = Number(n["fat_100g"] || 0);
+    const carbs = Number(n["carbohydrates_100g"] || 0);
+
+    html += `
+      <div class="card">
+        ${image ? `<img src="${image}">` : ""}
+
+        <h3>${name}</h3>
+
+        <div class="small">
+          Бренд: ${brand || "-"}<br>
+          Штрихкод: ${barcode || "-"}
+        </div>
+
+        <p>
+          На 100 г:<br>
+          Калории: ${calories}<br>
+          Белки: ${protein} г<br>
+          Жиры: ${fat} г<br>
+          Углеводы: ${carbs} г
+        </p>
+
+        <input id="grams_${index}" type="number" value="100" min="1">
+
+        <button onclick="addFood(${index})">
+          Добавить
+        </button>
+      </div>
+    `;
+  });
+
+  document.getElementById("results").innerHTML = html;
+}
+
+function addFood(index) {
+  const p = products[index];
+  const n = p.nutriments || {};
+
+  const grams = Number(document.getElementById("grams_" + index).value);
 
   if (!grams || grams <= 0) {
     alert("Введите граммы");
@@ -165,12 +192,12 @@ function addFood() {
   const k = grams / 100;
 
   const item = {
-    name: selectedProduct.name,
+    name: p.product_name || "Без названия",
     grams: grams,
-    calories: selectedProduct.calories100 * k,
-    protein: selectedProduct.protein100 * k,
-    fat: selectedProduct.fat100 * k,
-    carbs: selectedProduct.carbs100 * k
+    calories: Number(n["energy-kcal_100g"] || 0) * k,
+    protein: Number(n["proteins_100g"] || 0) * k,
+    fat: Number(n["fat_100g"] || 0) * k,
+    carbs: Number(n["carbohydrates_100g"] || 0) * k
   };
 
   totals.calories += item.calories;
@@ -180,7 +207,7 @@ function addFood() {
 
   document.getElementById("log").innerHTML += `
     <div class="card">
-      ${item.name} — ${item.grams} г<br>
+      <b>${item.name}</b> — ${item.grams} г<br>
       ${round(item.calories)} ккал,
       Б: ${round(item.protein)} г,
       Ж: ${round(item.fat)} г,
@@ -210,6 +237,7 @@ function round(n) {
 
 
 
+
 <!-- ========================================
      SERVICE CONSOLE
      Верхняя строка редактируется вручную
@@ -221,7 +249,7 @@ function round(n) {
 <div id="service-console">
 
   <div class="row" id="build-top">
-gpt | v1.0.0
+мультипоиск | v1.1.0
   </div>
 
   <div class="row" id="build-down">
