@@ -249,7 +249,9 @@ button {
        onkeydown="handleTagEnter(event)">
 
 <div class="top-buttons">
-  <button id="searchToggleBtn" onclick="toggleSearchState()">Stop Search</button>
+  <button id="searchToggleBtn" onclick="toggleFilter()">
+  Start Filter
+</button>
 </div>
 
   <div id="results"></div>
@@ -350,7 +352,7 @@ async function searchByName() {
   currentPage = 0;
   searchStopped = false;
 
-  document.getElementById("searchToggleBtn").innerText = "Stop Search";
+  document.getElementById("searchToggleBtn").innerText = "Start Filter";
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
     "Searching... Found: 0";
@@ -392,7 +394,7 @@ async function searchByBarcode() {
   currentPage = 0;
   searchStopped = false;
 
-  document.getElementById("searchToggleBtn").innerText = "Stop Search";
+  document.getElementById("searchToggleBtn").innerText = "Start Filter";
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
     "Searching... Found: 0";
@@ -415,47 +417,35 @@ async function searchByBarcode() {
   renderResults();
 }
 
-// Остановка поиска.
-function toggleSearchState() {
-  if (!searchStopped) {
-    searchStopped = true;
+// Остановка фильтра.
+function toggleFilter() {
+  searchStopped = !searchStopped;
 
-    document.getElementById("searchToggleBtn").innerText = "Start Search";
+  document.getElementById("searchToggleBtn").innerText =
+    searchStopped ? "Start Filter" : "Stop Filter";
+
+  if (searchStopped) {
     document.getElementById("searchProgress").innerText =
-      "Search stopped. Found: " + products.length;
-
-    return;
-  }
-
-  searchStopped = false;
-
-  document.getElementById("searchToggleBtn").innerText = "Stop Search";
-
-  if (lastSearchType === "name") {
-    searchByName();
-  }
-
-  if (lastSearchType === "barcode") {
-    searchByBarcode();
+      "Filter stopped. Found: " + products.length;
   }
 }
 
 function handleTagEnter(event) {
   if (event.key === "Enter") {
-    addSearchCriterion();
+    applyFilter();
   }
 }
   
-// Добавление критерия поиска внутри уже найденного списка.
-function addSearchCriterion() {
-  const criterion = document
+// Добавление фильтра внутри уже найденного списка.
+function applyFilter() {
+  const filter = document
     .getElementById("criteriaInput")
     .value
     .trim()
     .toLowerCase();
 
-  if (!criterion) {
-    alert("Enter tag");
+  if (!filter) {
+    alert("Enter filter");
     return;
   }
 
@@ -470,13 +460,13 @@ function addSearchCriterion() {
       p.ingredients_text
     ].join(" ").toLowerCase();
 
-    return text.includes(criterion);
+    return text.includes(filter);
   });
 
   currentPage = 0;
   renderResults();
 }
-
+  
 // Следующие 10 результатов.
 function showNext10() {
   if ((currentPage + 1) * 10 >= products.length) return;
@@ -699,7 +689,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-fix Start\Stop Search  | v3.3.2
+fix Start\Stop Toggle  | v3.3.3
 </div>
 
 <div class="row" id="build-down">
