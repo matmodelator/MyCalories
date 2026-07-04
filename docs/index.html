@@ -248,10 +248,7 @@ button {
        placeholder="Add Tag">
        
  <div class="top-buttons">
-  <button id="searchToggleBtn" onclick="toggleFilter()">
-    Start Filter
-  </button>
-
+  <button onclick="applyFilter()">Start Filter</button>
   <button onclick="undoLastFilter()">Undo Filter</button>
   <button onclick="clearAllFilters()">Clear Filters</button>
 </div>
@@ -268,7 +265,6 @@ button {
 let products = [];
 let currentPage = 0;
 let searchStopped = false;
-let filterActive = false;
 let filterHistory = [];
 
 // Основной объект дневника.
@@ -354,9 +350,7 @@ async function searchByName() {
   filterHistory = [];
   currentPage = 0;
   searchStopped = false;
-  filterActive = false;
-
-  document.getElementById("searchToggleBtn").innerText = "Start Filter";
+  
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
     "Searching... Found: 0";
@@ -407,9 +401,7 @@ async function searchByBarcode() {
   filterHistory = [];
   currentPage = 0;
   searchStopped = false;
-  filterActive = false;
-
-  document.getElementById("searchToggleBtn").innerText = "Start Filter";
+  
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
     "Searching... Found: 0";
@@ -440,23 +432,6 @@ async function searchByBarcode() {
     document.getElementById("results").innerHTML =
       "Search failed: " + error.message;
   }
-}
-
-// Остановка фильтра.
-function toggleFilter() {
-  if (!filterActive) {
-    filterActive = true;
-
-    document.getElementById("searchToggleBtn").innerText = "Stop Filter";
-
-    applyFilter();
-
-    return;
-  }
-
-  filterActive = false;
-
-  document.getElementById("searchToggleBtn").innerText = "Start Filter";
 }
  
 // Добавление фильтра внутри уже найденного списка.
@@ -732,7 +707,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-fix  search error  | v3.3.8
+start filter only  | v3.3.9
 </div>
 
 <div class="row" id="build-down">
