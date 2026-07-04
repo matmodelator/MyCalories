@@ -244,10 +244,9 @@ button {
 
   <div id="searchProgress" class="save-status"></div>
 
- <input id="filterInput"
-       placeholder="Add Tag"
-       onkeydown="handleTagEnter(event)">
-
+<input id="filterInput"
+       placeholder="Add Tag">
+       
  <div class="top-buttons">
   <button id="searchToggleBtn" onclick="toggleFilter()">
     Start Filter
@@ -425,23 +424,21 @@ async function searchByBarcode() {
 
 // Остановка фильтра.
 function toggleFilter() {
-  filterActive = !filterActive;
+  if (!filterActive) {
+    filterActive = true;
 
-  document.getElementById("searchToggleBtn").innerText =
-    filterActive ? "Stop Filter" : "Start Filter";
-}
-
-function handleTagEnter(event) {
-  if (event.key === "Enter") {
-    if (!filterActive) {
-      alert("Press Start Filter first");
-      return;
-    }
+    document.getElementById("searchToggleBtn").innerText = "Stop Filter";
 
     applyFilter();
+
+    return;
   }
+
+  filterActive = false;
+
+  document.getElementById("searchToggleBtn").innerText = "Start Filter";
 }
-  
+ 
 // Добавление фильтра внутри уже найденного списка.
 function applyFilter() {
   const filter = document
@@ -715,7 +712,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-fix criteria  | v3.3.6
+fix   placeholder="Add Tag"  | v3.3.7
 </div>
 
 <div class="row" id="build-down">
