@@ -690,6 +690,8 @@ function openPanel() {
 function closePanel() {
   document.getElementById("overlay").style.display = "none";
   document.getElementById("resultsPanel").classList.remove("open");
+
+  document.getElementById("filterInput").value = "";
 }
 
 // Округление чисел.
@@ -707,7 +709,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-start filter only  | v3.3.9
+clean add tag  | v3.3.10
 </div>
 
 <div class="row" id="build-down">
