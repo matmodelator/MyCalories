@@ -41,7 +41,9 @@ button {
 .top-buttons {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
   margin-bottom: 12px;
 }
 
@@ -463,7 +465,6 @@ function applyFilter() {
     return text.includes(filter);
   });
 
-  document.getElementById("filterInput").value = "";
   currentPage = 0;
   renderResults();
 }
@@ -709,7 +710,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-clean add tag  | v3.3.10
+not clean add tag  | v3.3.11
 </div>
 
 <div class="row" id="build-down">
