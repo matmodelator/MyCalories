@@ -264,6 +264,7 @@ button {
 let products = [];
 let currentPage = 0;
 let searchStopped = false;
+let lastSearchType = "";
 
 // Основной объект дневника.
 let diary = {};
@@ -342,6 +343,7 @@ async function searchByName() {
     return;
   }
 
+  lastSearchType = "name";
   openPanel();
 
   products = [];
@@ -383,6 +385,7 @@ async function searchByBarcode() {
     return;
   }
 
+  lastSearchType = "barcode"; 
   openPanel();
 
   products = [];
@@ -414,14 +417,26 @@ async function searchByBarcode() {
 
 // Остановка поиска.
 function toggleSearchState() {
-  searchStopped = !searchStopped;
+  if (!searchStopped) {
+    searchStopped = true;
 
-  document.getElementById("searchToggleBtn").innerText =
-    searchStopped ? "Start Search" : "Stop Search";
-
-  if (searchStopped) {
+    document.getElementById("searchToggleBtn").innerText = "Start Search";
     document.getElementById("searchProgress").innerText =
       "Search stopped. Found: " + products.length;
+
+    return;
+  }
+
+  searchStopped = false;
+
+  document.getElementById("searchToggleBtn").innerText = "Stop Search";
+
+  if (lastSearchType === "name") {
+    searchByName();
+  }
+
+  if (lastSearchType === "barcode") {
+    searchByBarcode();
   }
 }
 
@@ -684,7 +699,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-ремонт поиска  | v3.3.1
+fix Start\Stop Search  | v3.3.2
 </div>
 
 <div class="row" id="build-down">
