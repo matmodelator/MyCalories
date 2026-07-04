@@ -244,20 +244,19 @@ button {
 
   <div id="searchProgress" class="save-status"></div>
 
-  <div class="top-buttons">
-    <input id="criteriaInput" placeholder="Add tag inside current results">
-    <button onclick="addSearchCriterion()">Add tag</button>
-  </div>
+  <input id="criteriaInput"
+       placeholder="Add Tag"
+       onkeydown="handleTagEnter(event)">
 
-  <div class="top-buttons">
-    <button onclick="stopSearch()">Stop Search</button>
-  </div>
+<div class="top-buttons">
+  <button id="searchToggleBtn" onclick="toggleSearchState()">Stop Search</button>
+</div>
 
   <div id="results"></div>
 
   <div class="top-buttons">
-    <button onclick="showPrevious10()">Show previous 10</button>
-    <button onclick="showNext10()">Show next 10</button>
+    <button onclick="showPrevious10()">Previous 10</button>
+    <button onclick="showNext10()">Next 10</button>
   </div>
 </div>
 
@@ -348,7 +347,8 @@ async function searchByName() {
   products = [];
   currentPage = 0;
   searchStopped = false;
-
+  
+  document.getElementById("searchToggleBtn").innerText = "Stop Search";
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
     "Searching... Found: 0";
@@ -389,6 +389,7 @@ async function searchByBarcode() {
   currentPage = 0;
   searchStopped = false;
 
+  document.getElementById("searchToggleBtn").innerText = "Stop Search";
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
     "Searching... Found: 0";
@@ -412,11 +413,22 @@ async function searchByBarcode() {
 }
 
 // Остановка поиска.
-function stopSearch() {
-  searchStopped = true;
+function toggleSearchState() {
+  searchStopped = !searchStopped;
 
-  document.getElementById("searchProgress").innerText =
-    "Search stopped. Found: " + products.length;
+  document.getElementById("searchToggleBtn").innerText =
+    searchStopped ? "Start Search" : "Stop Search";
+
+  if (searchStopped) {
+    document.getElementById("searchProgress").innerText =
+      "Search stopped. Found: " + products.length;
+  }
+}
+
+function handleTagEnter(event) {
+  if (event.key === "Enter") {
+    addSearchCriterion();
+  }
 }
 
 // Добавление критерия поиска внутри уже найденного списка.
@@ -427,10 +439,7 @@ function addSearchCriterion() {
     .trim()
     .toLowerCase();
 
-  if (!criterion) {
-    alert("Enter tag");
-    return;
-  }
+  if (!criterion) return;
 
   products = products.filter(p => {
     const text = [
@@ -447,6 +456,7 @@ function addSearchCriterion() {
   });
 
   currentPage = 0;
+  document.getElementById("criteriaInput").value = "";
   renderResults();
 }
 
@@ -672,7 +682,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-search panel controls, stop search, next/previous 10 | v3.2.0
+Add Tag like placeholder & Stop Search \Start Search | v3.3.0
 </div>
 
 <div class="row" id="build-down">
