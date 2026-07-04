@@ -355,7 +355,7 @@ async function searchByName() {
   currentPage = 0;
   searchStopped = false;
   filterActive = false;
-  
+
   document.getElementById("searchToggleBtn").innerText = "Start Filter";
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
@@ -369,17 +369,27 @@ async function searchByName() {
     "&json=1" +
     "&page_size=100";
 
-  const response = await fetch(url);
+  try {
+    const response = await fetch(url);
 
-  if (searchStopped) return;
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
 
-  const data = await response.json();
+    if (searchStopped) return;
 
-  if (searchStopped) return;
+    const data = await response.json();
 
-  products = data.products || [];
+    if (searchStopped) return;
 
-  renderResults();
+    products = data.products || [];
+
+    renderResults();
+  } catch (error) {
+    document.getElementById("searchProgress").innerText = "Search error";
+    document.getElementById("results").innerHTML =
+      "Search failed: " + error.message;
+  }
 }
 
 // Поиск по штрихкоду.
@@ -391,7 +401,7 @@ async function searchByBarcode() {
     return;
   }
 
-   openPanel();
+  openPanel();
 
   products = [];
   filterHistory = [];
@@ -409,17 +419,27 @@ async function searchByBarcode() {
     encodeURIComponent(barcode) +
     ".json";
 
-  const response = await fetch(url);
+  try {
+    const response = await fetch(url);
 
-  if (searchStopped) return;
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
 
-  const data = await response.json();
+    if (searchStopped) return;
 
-  if (searchStopped) return;
+    const data = await response.json();
 
-  products = data.product ? [data.product] : [];
+    if (searchStopped) return;
 
-  renderResults();
+    products = data.product ? [data.product] : [];
+
+    renderResults();
+  } catch (error) {
+    document.getElementById("searchProgress").innerText = "Search error";
+    document.getElementById("results").innerHTML =
+      "Search failed: " + error.message;
+  }
 }
 
 // Остановка фильтра.
@@ -712,7 +732,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-fix   placeholder="Add Tag"  | v3.3.7
+fix  search error  | v3.3.8
 </div>
 
 <div class="row" id="build-down">
