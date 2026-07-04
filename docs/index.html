@@ -244,7 +244,7 @@ button {
 
   <div id="searchProgress" class="save-status"></div>
 
-  <input id="criteriaInput"
+ <input id="criteriaInput"
        placeholder="Add Tag"
        onkeydown="handleTagEnter(event)">
 
@@ -347,7 +347,7 @@ async function searchByName() {
   products = [];
   currentPage = 0;
   searchStopped = false;
-  
+
   document.getElementById("searchToggleBtn").innerText = "Stop Search";
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
@@ -430,7 +430,7 @@ function handleTagEnter(event) {
     addSearchCriterion();
   }
 }
-
+  
 // Добавление критерия поиска внутри уже найденного списка.
 function addSearchCriterion() {
   const criterion = document
@@ -439,7 +439,10 @@ function addSearchCriterion() {
     .trim()
     .toLowerCase();
 
-  if (!criterion) return;
+  if (!criterion) {
+    alert("Enter tag");
+    return;
+  }
 
   products = products.filter(p => {
     const text = [
@@ -456,7 +459,6 @@ function addSearchCriterion() {
   });
 
   currentPage = 0;
-  document.getElementById("criteriaInput").value = "";
   renderResults();
 }
 
@@ -682,7 +684,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-Add Tag like placeholder & Stop Search \Start Search | v3.3.0
+ремонт поиска  | v3.3.1
 </div>
 
 <div class="row" id="build-down">
