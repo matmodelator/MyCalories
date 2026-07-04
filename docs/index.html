@@ -45,6 +45,12 @@ button {
   margin-bottom: 12px;
 }
 
+.top-buttons input {
+  width: auto;
+  flex: 1;
+  min-width: 220px;
+}
+
 .total {
   background: #e8f2ff;
   padding: 12px;
@@ -170,6 +176,7 @@ button {
   font-size: 13px;
   color: #2563eb;
   margin-top: 6px;
+  margin-bottom: 8px;
 }
 
 #service-console {
@@ -209,8 +216,19 @@ button {
 
   <div id="saveStatus" class="save-status"></div>
 
-  <input id="searchInput" placeholder="Example: hummus, banana, cottage">
-  <button onclick="searchProducts()">Search</button>
+  <input id="searchInput" placeholder="Example: hummus, banana, cottage or barcode">
+
+  <div class="top-buttons">
+    <button onclick="searchByTag()">Search by tag</button>
+    <button onclick="searchByBarcode()">Search by barcode</button>
+  </div>
+
+  <div class="top-buttons">
+    <input id="criteriaInput" placeholder="Add criterion inside current results">
+    <button onclick="addSearchCriterion()">Add criterion</button>
+  </div>
+
+  <div id="searchProgress" class="save-status"></div>
 
   <h2 id="dayTitle">Diary</h2>
   <div id="log"></div>
@@ -305,18 +323,21 @@ function changeDate() {
   renderDay();
 }
 
-// Запрос продуктов из Open Food Facts.
-// Функция оставлена как в рабочем варианте.
-async function searchProducts() {
+// Поиск по тегу / названию.
+async function searchByTag() {
   const query = document.getElementById("searchInput").value.trim();
 
   if (!query) {
-    alert("Введите название продукта");
+    alert("Enter product name or tag");
     return;
   }
 
   openPanel();
-  document.getElementById("results").innerHTML = "Загрузка...";
+
+  products = [];
+  document.getElementById("results").innerHTML = "";
+  document.getElementById("searchProgress").innerText =
+    "Searching... Found: 0";
 
   const url =
     "https://world.openfoodfacts.org/cgi/search.pl" +
@@ -324,26 +345,104 @@ async function searchProducts() {
     "&search_simple=1" +
     "&action=process" +
     "&json=1" +
-    "&page_size=20";
+    "&page_size=50";
 
   const response = await fetch(url);
   const data = await response.json();
 
   products = data.products || [];
 
-  if (products.length === 0) {
-    document.getElementById("results").innerHTML = "Ничего не найдено";
+  document.getElementById("searchProgress").innerText =
+    "Found: " + products.length + " / Showing: " + Math.min(products.length, 10);
+
+  renderResults();
+}
+
+// Поиск по штрихкоду.
+async function searchByBarcode() {
+  const barcode = document.getElementById("searchInput").value.trim();
+
+  if (!barcode) {
+    alert("Enter barcode");
     return;
   }
+
+  openPanel();
+
+  products = [];
+  document.getElementById("results").innerHTML = "";
+  document.getElementById("searchProgress").innerText =
+    "Searching... Found: 0";
+
+  const url =
+    "https://world.openfoodfacts.org/api/v2/product/" +
+    encodeURIComponent(barcode) +
+    ".json";
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (!data.product) {
+    products = [];
+    document.getElementById("results").innerHTML = "Nothing found";
+    document.getElementById("searchProgress").innerText = "Found: 0";
+    return;
+  }
+
+  products = [data.product];
+
+  document.getElementById("searchProgress").innerText =
+    "Found: 1 / Showing: 1";
+
+  renderResults();
+}
+
+// Добавление критерия поиска внутри уже найденного списка.
+function addSearchCriterion() {
+  const criterion = document
+    .getElementById("criteriaInput")
+    .value
+    .trim()
+    .toLowerCase();
+
+  if (!criterion) {
+    alert("Enter criterion");
+    return;
+  }
+
+  products = products.filter(p => {
+    const text = [
+      p.product_name,
+      p.brands,
+      p.code,
+      p.countries,
+      p.origins,
+      p.categories,
+      p.ingredients_text
+    ].join(" ").toLowerCase();
+
+    return text.includes(criterion);
+  });
+
+  document.getElementById("searchProgress").innerText =
+    "Found: " + products.length + " / Showing: " + Math.min(products.length, 10);
 
   renderResults();
 }
 
 // Рисуем список найденных продуктов.
+// Показываем только первые 10 вариантов.
 function renderResults() {
   let html = "";
 
-  products.forEach((p, index) => {
+  const visibleProducts = products.slice(0, 10);
+
+  if (visibleProducts.length === 0) {
+    document.getElementById("results").innerHTML = "Nothing found";
+    return;
+  }
+
+  visibleProducts.forEach((p, index) => {
     const n = p.nutriments || {};
 
     const name = p.product_name || "No name";
@@ -529,7 +628,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-fix dou,le console | v3.0.2
+two search buttons, barcode search, criteria filter, progress counter, 10 results | v3.1.0
 </div>
 
 <div class="row" id="build-down">
@@ -564,10 +663,6 @@ deploy: --
       + time;
 })();
 </script>
-
-
-
-
 
 </body>
 </html>
