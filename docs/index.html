@@ -244,16 +244,19 @@ button {
 
   <div id="searchProgress" class="save-status"></div>
 
- <input id="criteriaInput"
+ <input id="filterInput"
        placeholder="Add Tag"
        onkeydown="handleTagEnter(event)">
 
-<div class="top-buttons">
+ <div class="top-buttons">
   <button id="searchToggleBtn" onclick="toggleFilter()">
-  Start Filter
-</button>
-</div>
+    Start Filter
+  </button>
 
+  <button onclick="undoLastFilter()">Undo Filter</button>
+  <button onclick="clearAllFilters()">Clear Filters</button>
+</div>
+  
   <div id="results"></div>
 
   <div class="top-buttons">
@@ -267,6 +270,7 @@ let products = [];
 let currentPage = 0;
 let searchStopped = false;
 let filterActive = false;
+let filterHistory = [];
 
 // Основной объект дневника.
 let diary = {};
@@ -348,6 +352,7 @@ async function searchByName() {
   openPanel();
 
   products = [];
+  filterHistory = [];
   currentPage = 0;
   searchStopped = false;
   filterActive = false;
@@ -390,6 +395,7 @@ async function searchByBarcode() {
    openPanel();
 
   products = [];
+  filterHistory = [];
   currentPage = 0;
   searchStopped = false;
   filterActive = false;
@@ -449,20 +455,40 @@ function applyFilter() {
     return;
   }
 
+  filterHistory.push([...products]);
+
   products = products.filter(p => {
     const text = [
-      p.product_name,
-      p.brands,
-      p.code,
-      p.countries,
-      p.origins,
-      p.categories,
-      p.ingredients_text
+      p.product_name || "",
+      p.brands || "",
+      p.code || "",
+      p.countries || "",
+      p.origins || "",
+      p.categories || "",
+      p.ingredients_text || ""
     ].join(" ").toLowerCase();
 
     return text.includes(filter);
   });
 
+  document.getElementById("criteriaInput").value = "";
+  currentPage = 0;
+  renderResults();
+}
+
+function undoLastFilter() {
+  if (filterHistory.length === 0) return;
+
+  products = filterHistory.pop();
+  currentPage = 0;
+  renderResults();
+}
+
+function clearAllFilters() {
+  if (filterHistory.length === 0) return;
+
+  products = filterHistory[0];
+  filterHistory = [];
   currentPage = 0;
   renderResults();
 }
@@ -689,7 +715,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-fix Filter  | v3.3.4
+Add Undo\Clear  | v3.3.5
 </div>
 
 <div class="row" id="build-down">
