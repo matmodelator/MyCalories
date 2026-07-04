@@ -48,7 +48,7 @@ button {
 .top-buttons input {
   width: auto;
   flex: 1;
-  min-width: 220px;
+  min-width: 180px;
 }
 
 .total {
@@ -219,16 +219,9 @@ button {
   <input id="searchInput" placeholder="Example: hummus, banana, cottage or barcode">
 
   <div class="top-buttons">
-    <button onclick="searchByTag()">Search by tag</button>
+    <button onclick="searchByName()">Search by name</button>
     <button onclick="searchByBarcode()">Search by barcode</button>
   </div>
-
-  <div class="top-buttons">
-    <input id="criteriaInput" placeholder="Add criterion inside current results">
-    <button onclick="addSearchCriterion()">Add criterion</button>
-  </div>
-
-  <div id="searchProgress" class="save-status"></div>
 
   <h2 id="dayTitle">Diary</h2>
   <div id="log"></div>
@@ -249,11 +242,29 @@ button {
     <button onclick="closePanel()">×</button>
   </div>
 
+  <div id="searchProgress" class="save-status"></div>
+
+  <div class="top-buttons">
+    <input id="criteriaInput" placeholder="Add tag inside current results">
+    <button onclick="addSearchCriterion()">Add tag</button>
+  </div>
+
+  <div class="top-buttons">
+    <button onclick="stopSearch()">Stop Search</button>
+  </div>
+
   <div id="results"></div>
+
+  <div class="top-buttons">
+    <button onclick="showPrevious10()">Show previous 10</button>
+    <button onclick="showNext10()">Show next 10</button>
+  </div>
 </div>
 
 <script>
 let products = [];
+let currentPage = 0;
+let searchStopped = false;
 
 // Основной объект дневника.
 let diary = {};
@@ -323,18 +334,21 @@ function changeDate() {
   renderDay();
 }
 
-// Поиск по тегу / названию.
-async function searchByTag() {
+// Поиск по названию.
+async function searchByName() {
   const query = document.getElementById("searchInput").value.trim();
 
   if (!query) {
-    alert("Enter product name or tag");
+    alert("Enter product name");
     return;
   }
 
   openPanel();
 
   products = [];
+  currentPage = 0;
+  searchStopped = false;
+
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
     "Searching... Found: 0";
@@ -348,12 +362,14 @@ async function searchByTag() {
     "&page_size=50";
 
   const response = await fetch(url);
+
+  if (searchStopped) return;
+
   const data = await response.json();
 
-  products = data.products || [];
+  if (searchStopped) return;
 
-  document.getElementById("searchProgress").innerText =
-    "Found: " + products.length + " / Showing: " + Math.min(products.length, 10);
+  products = data.products || [];
 
   renderResults();
 }
@@ -370,6 +386,9 @@ async function searchByBarcode() {
   openPanel();
 
   products = [];
+  currentPage = 0;
+  searchStopped = false;
+
   document.getElementById("results").innerHTML = "";
   document.getElementById("searchProgress").innerText =
     "Searching... Found: 0";
@@ -380,21 +399,24 @@ async function searchByBarcode() {
     ".json";
 
   const response = await fetch(url);
+
+  if (searchStopped) return;
+
   const data = await response.json();
 
-  if (!data.product) {
-    products = [];
-    document.getElementById("results").innerHTML = "Nothing found";
-    document.getElementById("searchProgress").innerText = "Found: 0";
-    return;
-  }
+  if (searchStopped) return;
 
-  products = [data.product];
-
-  document.getElementById("searchProgress").innerText =
-    "Found: 1 / Showing: 1";
+  products = data.product ? [data.product] : [];
 
   renderResults();
+}
+
+// Остановка поиска.
+function stopSearch() {
+  searchStopped = true;
+
+  document.getElementById("searchProgress").innerText =
+    "Search stopped. Found: " + products.length;
 }
 
 // Добавление критерия поиска внутри уже найденного списка.
@@ -406,7 +428,7 @@ function addSearchCriterion() {
     .toLowerCase();
 
   if (!criterion) {
-    alert("Enter criterion");
+    alert("Enter tag");
     return;
   }
 
@@ -424,25 +446,47 @@ function addSearchCriterion() {
     return text.includes(criterion);
   });
 
-  document.getElementById("searchProgress").innerText =
-    "Found: " + products.length + " / Showing: " + Math.min(products.length, 10);
+  currentPage = 0;
+  renderResults();
+}
 
+// Следующие 10 результатов.
+function showNext10() {
+  if ((currentPage + 1) * 10 >= products.length) return;
+
+  currentPage++;
+  renderResults();
+}
+
+// Предыдущие 10 результатов.
+function showPrevious10() {
+  if (currentPage === 0) return;
+
+  currentPage--;
   renderResults();
 }
 
 // Рисуем список найденных продуктов.
-// Показываем только первые 10 вариантов.
+// Показываем только 10 вариантов на страницу.
 function renderResults() {
   let html = "";
 
-  const visibleProducts = products.slice(0, 10);
+  const start = currentPage * 10;
+  const end = start + 10;
+  const visibleProducts = products.slice(start, end);
 
   if (visibleProducts.length === 0) {
     document.getElementById("results").innerHTML = "Nothing found";
+    document.getElementById("searchProgress").innerText = "Found: 0";
     return;
   }
 
-  visibleProducts.forEach((p, index) => {
+  document.getElementById("searchProgress").innerText =
+    "Found: " + products.length +
+    " / Showing: " + (start + 1) + "-" + Math.min(end, products.length);
+
+  visibleProducts.forEach((p, localIndex) => {
+    const index = start + localIndex;
     const n = p.nutriments || {};
 
     const name = p.product_name || "No name";
@@ -628,7 +672,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-two search buttons, barcode search, criteria filter, progress counter, 10 results | v3.1.0
+search panel controls, stop search, next/previous 10 | v3.2.0
 </div>
 
 <div class="row" id="build-down">
