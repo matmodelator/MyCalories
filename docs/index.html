@@ -368,7 +368,7 @@ async function searchByName() {
     "&search_simple=1" +
     "&action=process" +
     "&json=1" +
-    "&page_size=50";
+    "&page_size=100";
 
   const response = await fetch(url);
 
@@ -445,7 +445,7 @@ function handleTagEnter(event) {
 // Добавление фильтра внутри уже найденного списка.
 function applyFilter() {
   const filter = document
-    .getElementById("criteriaInput")
+    .getElementById("filterInput")
     .value
     .trim()
     .toLowerCase();
@@ -471,7 +471,7 @@ function applyFilter() {
     return text.includes(filter);
   });
 
-  document.getElementById("criteriaInput").value = "";
+  document.getElementById("filterInput").value = "";
   currentPage = 0;
   renderResults();
 }
@@ -715,7 +715,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-Add Undo\Clear  | v3.3.5
+fix criteria  | v3.3.6
 </div>
 
 <div class="row" id="build-down">
