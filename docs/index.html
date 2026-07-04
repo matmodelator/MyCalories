@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,6 +35,14 @@ input {
 
 button {
   cursor: pointer;
+  margin: 4px 0;
+}
+
+.top-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
 .total {
@@ -64,9 +72,9 @@ button {
 .results-panel {
   position: fixed;
   top: 0;
-  right: -360px;
-  width: 340px;
-  max-width: 90vw;
+  right: -380px;
+  width: 360px;
+  max-width: 92vw;
   height: 100vh;
   background: white;
   z-index: 20;
@@ -107,6 +115,17 @@ button {
   object-fit: contain;
   background: #f3f3f3;
   border-radius: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: zoom-in;
+}
+
+/* Увеличение фото при наведении */
+.result-main img:hover {
+  transform: scale(2.8);
+  z-index: 50;
+  position: relative;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  background: white;
 }
 
 .result-title {
@@ -146,6 +165,12 @@ button {
   padding: 7px 10px;
   font-size: 14px;
 }
+
+.save-status {
+  font-size: 13px;
+  color: #2563eb;
+  margin-top: 6px;
+}
 </style>
 </head>
 
@@ -154,20 +179,27 @@ button {
 <div class="app">
   <h1>Mini Calories</h1>
 
-  <label>Дата</label>
+  <label>Date</label>
   <input id="dateInput" type="date" onchange="changeDate()">
 
-  <input id="searchInput" placeholder="Например: hummus, banana, cottage">
-  <button onclick="searchProducts()">Найти</button>
+  <div class="top-buttons">
+    <button onclick="saveDiary()">Save</button>
+    <button onclick="clearCurrentDay()">Clear Day</button>
+  </div>
 
-  <h2 id="dayTitle">Дневник</h2>
+  <div id="saveStatus" class="save-status"></div>
+
+  <input id="searchInput" placeholder="Example: hummus, banana, cottage">
+  <button onclick="searchProducts()">Search</button>
+
+  <h2 id="dayTitle">Diary</h2>
   <div id="log"></div>
 
   <div class="total" id="totalBox">
-    Калории: 0<br>
-    Белки: 0 г<br>
-    Жиры: 0 г<br>
-    Углеводы: 0 г
+    Calories: 0<br>
+    Protein: 0 g<br>
+    Fat: 0 g<br>
+    Carbs: 0 g
   </div>
 </div>
 
@@ -175,7 +207,7 @@ button {
 
 <div id="resultsPanel" class="results-panel">
   <div class="panel-header">
-    <b>Результаты поиска</b>
+    <b>Search results</b>
     <button onclick="closePanel()">×</button>
   </div>
 
@@ -185,17 +217,50 @@ button {
 <script>
 let products = [];
 
+// Основной объект дневника.
+// Ключ — дата, значение — список еды и итоги за день.
 let diary = {};
 
 let currentDate = "";
 
+// Загружаем сохраненный дневник из браузера.
+function loadDiary() {
+  const saved = localStorage.getItem("miniCaloriesDiary");
+
+  if (saved) {
+    diary = JSON.parse(saved);
+  } else {
+    diary = {};
+  }
+}
+
+// Сохраняем дневник локально в браузер.
+function saveDiary() {
+  localStorage.setItem("miniCaloriesDiary", JSON.stringify(diary));
+
+  document.getElementById("saveStatus").innerText =
+    "Saved locally in this browser";
+
+  setTimeout(() => {
+    document.getElementById("saveStatus").innerText = "";
+  }, 2500);
+}
+
+// Устанавливаем текущую дату.
 function initDate() {
   const today = new Date().toISOString().slice(0, 10);
   currentDate = today;
   document.getElementById("dateInput").value = today;
 
-  if (!diary[currentDate]) {
-    diary[currentDate] = {
+  ensureDay(currentDate);
+  renderDay();
+}
+
+// Проверяем, есть ли день в дневнике.
+// Если нет — создаем пустой день.
+function ensureDay(date) {
+  if (!diary[date]) {
+    diary[date] = {
       items: [],
       totals: {
         calories: 0,
@@ -205,38 +270,26 @@ function initDate() {
       }
     };
   }
-
-  renderDay();
 }
 
+// Переключение даты через календарь.
 function changeDate() {
   currentDate = document.getElementById("dateInput").value;
-
-  if (!diary[currentDate]) {
-    diary[currentDate] = {
-      items: [],
-      totals: {
-        calories: 0,
-        protein: 0,
-        fat: 0,
-        carbs: 0
-      }
-    };
-  }
-
+  ensureDay(currentDate);
   renderDay();
 }
 
+// Запрос продуктов из Open Food Facts.
 async function searchProducts() {
   const query = document.getElementById("searchInput").value.trim();
 
   if (!query) {
-    alert("Введите название продукта");
+    alert("Enter product name");
     return;
   }
 
   openPanel();
-  document.getElementById("results").innerHTML = "Загрузка...";
+  document.getElementById("results").innerHTML = "Loading...";
 
   const url =
     "https://world.openfoodfacts.org/cgi/search.pl" +
@@ -252,20 +305,21 @@ async function searchProducts() {
   products = data.products || [];
 
   if (products.length === 0) {
-    document.getElementById("results").innerHTML = "Ничего не найдено";
+    document.getElementById("results").innerHTML = "Nothing found";
     return;
   }
 
   renderResults();
 }
 
+// Рисуем список найденных продуктов в боковой панели.
 function renderResults() {
   let html = "";
 
   products.forEach((p, index) => {
     const n = p.nutriments || {};
 
-    const name = p.product_name || "Без названия";
+    const name = p.product_name || "No name";
     const brand = p.brands || "";
     const image = p.image_front_small_url || "";
     const barcode = p.code || "";
@@ -282,7 +336,7 @@ function renderResults() {
       <div class="result-item">
 
         <div class="result-main">
-          ${image ? `<img src="${image}">` : `<img alt="">`}
+          ${image ? `<img src="${image}" alt="">` : `<img alt="">`}
 
           <div>
             <div class="result-title">${name}</div>
@@ -294,26 +348,26 @@ function renderResults() {
             </div>
 
             <button class="small-btn" onclick="toggleDetails(${index})">
-              Подробнее
+              Details
             </button>
           </div>
         </div>
 
         <div id="details_${index}" class="details">
-          Штрихкод: ${barcode || "-"}<br>
+          Barcode: ${barcode || "-"}<br>
           Countries: ${countries || "-"}<br>
           Origins: ${origins || "-"}<br><br>
 
-          На 100 г:<br>
-          Калории: ${calories}<br>
-          Белки: ${protein} г<br>
-          Жиры: ${fat} г<br>
-          Углеводы: ${carbs} г<br>
+          Per 100 g:<br>
+          Calories: ${calories}<br>
+          Protein: ${protein} g<br>
+          Fat: ${fat} g<br>
+          Carbs: ${carbs} g<br>
 
           <input id="grams_${index}" type="number" value="100" min="1">
 
           <button onclick="addFood(${index})">
-            Добавить
+            Add
           </button>
         </div>
 
@@ -324,11 +378,13 @@ function renderResults() {
   document.getElementById("results").innerHTML = html;
 }
 
+// Открыть / закрыть подробности продукта.
 function toggleDetails(index) {
   const box = document.getElementById("details_" + index);
   box.classList.toggle("open");
 }
 
+// Добавляем выбранный продукт в дневник выбранной даты.
 function addFood(index) {
   const p = products[index];
   const n = p.nutriments || {};
@@ -336,14 +392,14 @@ function addFood(index) {
   const grams = Number(document.getElementById("grams_" + index).value);
 
   if (!grams || grams <= 0) {
-    alert("Введите граммы");
+    alert("Enter grams");
     return;
   }
 
   const k = grams / 100;
 
   const item = {
-    name: p.product_name || "Без названия",
+    name: p.product_name || "No name",
     brand: p.brands || "",
     countries: p.countries || "",
     origins: p.origins || "",
@@ -353,6 +409,8 @@ function addFood(index) {
     fat: Number(n["fat_100g"] || 0) * k,
     carbs: Number(n["carbohydrates_100g"] || 0) * k
   };
+
+  ensureDay(currentDate);
 
   diary[currentDate].items.push(item);
 
@@ -365,22 +423,25 @@ function addFood(index) {
   closePanel();
 }
 
+// Рисуем дневник выбранной даты.
 function renderDay() {
-  document.getElementById("dayTitle").innerText = "Дневник: " + currentDate;
+  ensureDay(currentDate);
+
+  document.getElementById("dayTitle").innerText = "Diary: " + currentDate;
 
   let html = "";
 
   diary[currentDate].items.forEach(item => {
     html += `
       <div class="card">
-        <b>${item.name}</b> — ${item.grams} г<br>
+        <b>${item.name}</b> — ${item.grams} g<br>
         ${item.brand ? item.brand + "<br>" : ""}
         ${item.countries ? "Countries: " + item.countries + "<br>" : ""}
         ${item.origins ? "Origins: " + item.origins + "<br>" : ""}
-        ${round(item.calories)} ккал,
-        Б: ${round(item.protein)} г,
-        Ж: ${round(item.fat)} г,
-        У: ${round(item.carbs)} г
+        ${round(item.calories)} kcal,
+        P: ${round(item.protein)} g,
+        F: ${round(item.fat)} g,
+        C: ${round(item.carbs)} g
       </div>
     `;
   });
@@ -389,31 +450,54 @@ function renderDay() {
   updateTotals();
 }
 
+// Обновляем дневные итоги.
 function updateTotals() {
   const totals = diary[currentDate].totals;
 
   document.getElementById("totalBox").innerHTML = `
-    Калории: ${round(totals.calories)}<br>
-    Белки: ${round(totals.protein)} г<br>
-    Жиры: ${round(totals.fat)} г<br>
-    Углеводы: ${round(totals.carbs)} г
+    Calories: ${round(totals.calories)}<br>
+    Protein: ${round(totals.protein)} g<br>
+    Fat: ${round(totals.fat)} g<br>
+    Carbs: ${round(totals.carbs)} g
   `;
 }
 
+// Очистка текущего дня.
+function clearCurrentDay() {
+  if (!confirm("Clear this day?")) return;
+
+  diary[currentDate] = {
+    items: [],
+    totals: {
+      calories: 0,
+      protein: 0,
+      fat: 0,
+      carbs: 0
+    }
+  };
+
+  renderDay();
+}
+
+// Открываем боковую панель.
 function openPanel() {
   document.getElementById("overlay").style.display = "block";
   document.getElementById("resultsPanel").classList.add("open");
 }
 
+// Закрываем боковую панель.
 function closePanel() {
   document.getElementById("overlay").style.display = "none";
   document.getElementById("resultsPanel").classList.remove("open");
 }
 
+// Округление чисел.
 function round(n) {
   return Math.round(n * 10) / 10;
 }
 
+// Старт приложения.
+loadDiary();
 initDate();
 </script>
 
@@ -431,7 +515,7 @@ initDate();
 
 <div id="service-console">
 
-страны и даты | v2.0.0
+интерфейс на английском, но комментарии в коде на русском; кнопка Save пишет дневник в localStorage, при загрузке страница читает сохраненное; фото увеличивается при наведении | v3.0.0
   </div>
 
   <div class="row" id="build-down">
