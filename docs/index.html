@@ -559,7 +559,7 @@ function renderResults() {
     const brand = p.brands || "";
     const image = p.image_front_small_url || "";
     const barcode = p.code || "";
-
+    const category = p.categories || "-";
     const countries = p.countries || "";
     const origins = p.origins || "";
 
@@ -594,7 +594,8 @@ function renderResults() {
           Barcode: ${barcode || "-"}<br>
           Countries: ${countries || "-"}<br>
           Origins: ${origins || "-"}<br><br>
-
+          Category: ${p.categories || "-"}<br><br>
+          
          Per 100 g:<br>
 Energy: ${calories} kcal<br>
 Protein: ${protein} g<br>
@@ -604,10 +605,8 @@ Alcohol: ${alcohol} g<br>
 
           <input id="grams_${index}" type="number" value="100" min="1">
 
-          <label>
-  <input id="liquid_${index}"
-         type="checkbox"
-         ${isBeverage(p) ? "checked" : ""}>
+          <label style="display:inline-flex;align-items:center;gap:6px;">
+  <input id="liquid_${index}" type="checkbox" ${isBeverage(p) ? "checked" : ""}>
   Liquid
 </label>
 
@@ -639,7 +638,6 @@ function isBeverage(p) {
   ].join(" ").toLowerCase();
 
   return text.includes("beverage") ||
-         text.includes("water") ||
          text.includes("juice") ||
          text.includes("milk") ||
          text.includes("cola") ||
@@ -786,7 +784,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-calc aqua   | v3.4.1
+categories   | v3.4.2
 </div>
 
 <div class="row" id="build-down">
