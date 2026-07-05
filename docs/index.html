@@ -338,7 +338,7 @@ function initDate() {
   fat: 0,
   carbs: 0,
   alcohol: 0,
-  water: 0
+  liquid: 0
       }
     };
   }
@@ -359,7 +359,7 @@ function changeDate() {
   fat: 0,
   carbs: 0,
   alcohol: 0,
-  water: 0
+  liquid: 0
       }
     };
   }
@@ -568,8 +568,7 @@ function renderResults() {
     const fat = Number(n["fat_100g"] || 0);
     const carbs = Number(n["carbohydrates_100g"] || 0);
     const alcohol = Number(n["alcohol_100g"] || 0);
-    const water = Number(n["water_100g"] || 0);
-
+    
     html += `
       <div class="result-item">
 
@@ -602,9 +601,15 @@ Protein: ${protein} g<br>
 Fat: ${fat} g<br>
 Carbs: ${carbs} g<br>
 Alcohol: ${alcohol} g<br>
-Water: ${water} g<br>
 
           <input id="grams_${index}" type="number" value="100" min="1">
+
+          <label>
+  <input id="liquid_${index}"
+         type="checkbox"
+         ${isBeverage(p) ? "checked" : ""}>
+  Liquid
+</label>
 
           <button onclick="addFood(${index})">
             Add
@@ -624,12 +629,39 @@ function toggleDetails(index) {
   box.classList.toggle("open");
 }
 
+// Определение напитков.
+function isBeverage(p) {
+  const text = [
+    p.categories || "",
+    (p.categories_tags || []).join(" "),
+    p.pnns_groups_1 || "",
+    p.pnns_groups_2 || ""
+  ].join(" ").toLowerCase();
+
+  return text.includes("beverage") ||
+         text.includes("water") ||
+         text.includes("juice") ||
+         text.includes("milk") ||
+         text.includes("cola") ||
+         text.includes("energy") ||
+         text.includes("cocktail") ||
+         text.includes("alcohol") ||
+         text.includes("beer") ||
+         text.includes("wine") ||
+         text.includes("spirit") ||
+         text.includes("liqueur") ||
+         text.includes("compote");
+}
+  
 // Добавление еды в дневник.
 function addFood(index) {
   const p = products[index];
   const n = p.nutriments || {};
 
   const grams = Number(document.getElementById("grams_" + index).value);
+
+const isLiquid =
+    document.getElementById("liquid_" + index).checked;
 
   if (!grams || grams <= 0) {
     alert("Enter grams");
@@ -649,7 +681,7 @@ function addFood(index) {
     fat: Number(n["fat_100g"] || 0) * k,
     carbs: Number(n["carbohydrates_100g"] || 0) * k,
     alcohol: Number(n["alcohol_100g"] || 0) * k,
-    water: Number(n["water_100g"] || 0) * k
+    liquid: isLiquid ? grams : 0
   };
 
   diary[currentDate].items.push(item);
@@ -659,7 +691,7 @@ function addFood(index) {
   diary[currentDate].totals.fat += item.fat;
   diary[currentDate].totals.carbs += item.carbs;
   diary[currentDate].totals.alcohol += item.alcohol;
-  diary[currentDate].totals.water += item.water;
+  diary[currentDate].totals.liquid += item.liquid;
   
   renderDay();
   closePanel();
@@ -674,7 +706,7 @@ function renderDay() {
   diary[currentDate].items.forEach(item => {
     html += `
       <div class="card">
-        <b>${item.name}</b> — ${item.grams} g<br>
+        <b>${item.name}</b> — ${item.grams} ${item.liquid > 0 ? "ml" : "g"}<br>
         ${item.brand ? item.brand + "<br>" : ""}
         ${item.countries ? "Countries: " + item.countries + "<br>" : ""}
         ${item.origins ? "Origins: " + item.origins + "<br>" : ""}
@@ -683,7 +715,7 @@ P: ${round(item.protein)} g,
 F: ${round(item.fat)} g,
 C: ${round(item.carbs)} g,
 A: ${round(item.alcohol)} g,
-W: ${round(item.water)} g
+L: ${round(item.liquid)} ml
       </div>
     `;
   });
@@ -702,7 +734,7 @@ function updateTotals() {
   Fat: ${round(totals.fat)} g<br>
   Carbs: ${round(totals.carbs)} g<br>
   Alcohol: ${round(totals.alcohol)} g<br>
-  Water: ${round(totals.water)} g
+  Liquid: ${round(totals.liquid)} ml
 `;
 }
 
@@ -718,7 +750,7 @@ function clearCurrentDay() {
   fat: 0,
   carbs: 0,
   alcohol: 0,
-  water: 0
+  liquid: 0
     }
   };
 
@@ -754,7 +786,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-add aqua $ alco  | v3.4.0
+calc aqua   | v3.4.1
 </div>
 
 <div class="row" id="build-down">
