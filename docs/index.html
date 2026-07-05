@@ -333,10 +333,12 @@ function initDate() {
     diary[currentDate] = {
       items: [],
       totals: {
-        calories: 0,
-        protein: 0,
-        fat: 0,
-        carbs: 0
+  calories: 0,
+  protein: 0,
+  fat: 0,
+  carbs: 0,
+  alcohol: 0,
+  water: 0
       }
     };
   }
@@ -352,10 +354,12 @@ function changeDate() {
     diary[currentDate] = {
       items: [],
       totals: {
-        calories: 0,
-        protein: 0,
-        fat: 0,
-        carbs: 0
+  calories: 0,
+  protein: 0,
+  fat: 0,
+  carbs: 0,
+  alcohol: 0,
+  water: 0
       }
     };
   }
@@ -563,6 +567,8 @@ function renderResults() {
     const protein = Number(n["proteins_100g"] || 0);
     const fat = Number(n["fat_100g"] || 0);
     const carbs = Number(n["carbohydrates_100g"] || 0);
+    const alcohol = Number(n["alcohol_100g"] || 0);
+    const water = Number(n["water_100g"] || 0);
 
     html += `
       <div class="result-item">
@@ -590,11 +596,13 @@ function renderResults() {
           Countries: ${countries || "-"}<br>
           Origins: ${origins || "-"}<br><br>
 
-          Per 100 g:<br>
-          Calories: ${calories}<br>
-          Protein: ${protein} g<br>
-          Fat: ${fat} g<br>
-          Carbs: ${carbs} g<br>
+         Per 100 g:<br>
+Energy: ${calories} kcal<br>
+Protein: ${protein} g<br>
+Fat: ${fat} g<br>
+Carbs: ${carbs} g<br>
+Alcohol: ${alcohol} g<br>
+Water: ${water} g<br>
 
           <input id="grams_${index}" type="number" value="100" min="1">
 
@@ -639,7 +647,9 @@ function addFood(index) {
     calories: Number(n["energy-kcal_100g"] || 0) * k,
     protein: Number(n["proteins_100g"] || 0) * k,
     fat: Number(n["fat_100g"] || 0) * k,
-    carbs: Number(n["carbohydrates_100g"] || 0) * k
+    carbs: Number(n["carbohydrates_100g"] || 0) * k,
+    alcohol: Number(n["alcohol_100g"] || 0) * k,
+    water: Number(n["water_100g"] || 0) * k
   };
 
   diary[currentDate].items.push(item);
@@ -648,7 +658,9 @@ function addFood(index) {
   diary[currentDate].totals.protein += item.protein;
   diary[currentDate].totals.fat += item.fat;
   diary[currentDate].totals.carbs += item.carbs;
-
+  diary[currentDate].totals.alcohol += item.alcohol;
+  diary[currentDate].totals.water += item.water;
+  
   renderDay();
   closePanel();
 }
@@ -667,9 +679,11 @@ function renderDay() {
         ${item.countries ? "Countries: " + item.countries + "<br>" : ""}
         ${item.origins ? "Origins: " + item.origins + "<br>" : ""}
         ${round(item.calories)} kcal,
-        P: ${round(item.protein)} g,
-        F: ${round(item.fat)} g,
-        C: ${round(item.carbs)} g
+P: ${round(item.protein)} g,
+F: ${round(item.fat)} g,
+C: ${round(item.carbs)} g,
+A: ${round(item.alcohol)} g,
+W: ${round(item.water)} g
       </div>
     `;
   });
@@ -683,11 +697,13 @@ function updateTotals() {
   const totals = diary[currentDate].totals;
 
   document.getElementById("totalBox").innerHTML = `
-    Calories: ${round(totals.calories)}<br>
-    Protein: ${round(totals.protein)} g<br>
-    Fat: ${round(totals.fat)} g<br>
-    Carbs: ${round(totals.carbs)} g
-  `;
+  Energy: ${round(totals.calories)} kcal<br>
+  Protein: ${round(totals.protein)} g<br>
+  Fat: ${round(totals.fat)} g<br>
+  Carbs: ${round(totals.carbs)} g<br>
+  Alcohol: ${round(totals.alcohol)} g<br>
+  Water: ${round(totals.water)} g
+`;
 }
 
 // Очистка текущего дня.
@@ -697,10 +713,12 @@ function clearCurrentDay() {
   diary[currentDate] = {
     items: [],
     totals: {
-      calories: 0,
-      protein: 0,
-      fat: 0,
-      carbs: 0
+  calories: 0,
+  protein: 0,
+  fat: 0,
+  carbs: 0,
+  alcohol: 0,
+  water: 0
     }
   };
 
@@ -736,7 +754,7 @@ initDate();
 ======================================== -->
 
 <div id="service-console">
-buttons  | v3.3.12
+add aqua $ alco  | v3.4.0
 </div>
 
 <div class="row" id="build-down">
